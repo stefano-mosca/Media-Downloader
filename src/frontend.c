@@ -16,6 +16,12 @@ int main(void)
         return EXIT_FAILURE;
     }
 
+    if (!TTF_Init())
+    {
+        SDL_Log("Error TTF: %s", SDL_GetError());
+        return EXIT_FAILURE;
+    }
+
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
 
@@ -33,23 +39,38 @@ int main(void)
         .type = wd_image,
         .rect = {24.0f, 12.0f, 36.17f, 44.0f},
         .visible = true,
-        .texture = IMG_LoadTexture(renderer, "assets/logo.png"),
+        .texture = IMG_LoadTexture(renderer, "assets/Images/logo.png"),
     };
 
-    if (!logo.texture)
+    Widget title =
     {
-        SDL_Log("Error loading logo: %s", SDL_GetError());
+        .type = wd_text,
+        .rect = {84.0f, 24.0f, 103.0f, 15.0f},
+        .visible = true,
+        .text =
+        {
+            .text = "Media Downloader",
+            .font = TTF_OpenFont("assets/Fonts/InterVariable.ttf", 12),
+            .color = {198, 208, 245, 255}
+        },
+    };
+
+    if (!logo.texture || !title.text.font)
+    {
+        SDL_Log("Error loading logo or text: %s", SDL_GetError());
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
         return EXIT_FAILURE;
     }
 
+    TTF_SetFontStyle(title.text.font, TTF_STYLE_BOLD);
+
     bool running = true;
     SDL_Event event;
 
     while (running)
-    {   
+    {
         while (SDL_PollEvent(&event))
         {
             if (event.type == SDL_EVENT_QUIT)
@@ -60,10 +81,18 @@ int main(void)
 
         SDL_SetRenderDrawColor(renderer, RED, GREEN, BLUE, 255);
         SDL_RenderClear(renderer);
-        widget_render(&logo, renderer);
+
+        Widget *ui[] = { &logo, &title };
+        size_t ui_cout = sizeof(ui) / sizeof(ui[0]);
+
+        for (size_t i = 0; i < ui_cout; ++i)
+        {
+            widget_render(ui[i], renderer);
+        }
         SDL_RenderPresent(renderer);
     }
-
+    
+    TTF_CloseFont(title.text.font);
     SDL_DestroyTexture(logo.texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

@@ -34,28 +34,9 @@ int main(void)
 
     SDL_SetRenderVSync(renderer, 1);
 
-    Widget logo =
-    {
-        .type = wd_image,
-        .rect = {24.0f, 12.0f, 36.17f, 44.0f},
-        .visible = true,
-        .texture = IMG_LoadTexture(renderer, "assets/Images/logo.png"),
-    };
+    SDL_Texture *logo = IMG_LoadTexture(renderer, "assets/Images/logo.png");
 
-    Widget title =
-    {
-        .type = wd_text,
-        .rect = {84.0f, 24.0f, 103.0f, 15.0f},
-        .visible = true,
-        .text =
-        {
-            .text = "Media Downloader",
-            .font = TTF_OpenFont("assets/Fonts/InterVariable.ttf", 12),
-            .color = {198, 208, 245, 255}
-        },
-    };
-
-    if (!logo.texture || !title.text.font)
+    if (!logo)
     {
         SDL_Log("Error loading logo or text: %s", SDL_GetError());
         SDL_DestroyRenderer(renderer);
@@ -64,7 +45,26 @@ int main(void)
         return EXIT_FAILURE;
     }
 
-    TTF_SetFontStyle(title.text.font, TTF_STYLE_BOLD);
+    TTF_Font *font_bold = TTF_OpenFont("assets/Fonts/InterVariable.ttf", 12);
+    TTF_SetFontStyle(font_bold, TTF_STYLE_BOLD);
+
+    Widget ui[] = 
+    {
+        {
+            .type = wd_image, .rect = {24.0f, 12.0f, 36.17f, 44.0f}, .visible = true, 
+            .texture = logo
+        },
+
+        {
+          .type = wd_text, .rect = {84.0f, 24.0f, 103.0f, 15.0f}, .visible = true,
+          .text = { .text = "Media Downloader", .font = font_bold, .color = {198, 208, 245, 255} }
+        },
+
+        {
+          .type = wd_text, .rect = {72.0f, 240.0f, 29.0f, 15.0f}, .visible = true,
+          .text = { .text = "Link:", .font = font_bold, .color = {198, 208, 245, 255} }
+        },
+    };
 
     bool running = true;
     SDL_Event event;
@@ -82,18 +82,17 @@ int main(void)
         SDL_SetRenderDrawColor(renderer, RED, GREEN, BLUE, 255);
         SDL_RenderClear(renderer);
 
-        Widget *ui[] = { &logo, &title };
         size_t ui_cout = sizeof(ui) / sizeof(ui[0]);
 
         for (size_t i = 0; i < ui_cout; ++i)
         {
-            widget_render(ui[i], renderer);
+            widget_render(&ui[i], renderer);
         }
         SDL_RenderPresent(renderer);
     }
-    
-    TTF_CloseFont(title.text.font);
-    SDL_DestroyTexture(logo.texture);
+
+    TTF_CloseFont(font_bold);
+    SDL_DestroyTexture(logo);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();

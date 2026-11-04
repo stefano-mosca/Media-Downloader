@@ -1,5 +1,17 @@
 #include <widget.h>
 
+float ui_get_scale(SDL_Renderer *r)
+{
+    int pw, ph;
+    if (!SDL_GetRenderOutputSize(r, &pw, &ph)) return 1.0f;
+
+    float sx = pw / (float) WIDTH;
+    float sy = ph / (float) HEIGHT;
+    float s  = sx < sy ? sx : sy;
+
+    return s >= 1.0f ? (float)(int) s : 1.0f;
+}
+
 void widget_render(const Widget *w, SDL_Renderer *r)
 {
     if (!w || !w->visible) return;
@@ -25,7 +37,18 @@ void widget_render(const Widget *w, SDL_Renderer *r)
                 break;
             }
 
-            SDL_RenderTexture(r, t, NULL, &w->rect);
+            float scale = ui_get_scale(r);
+            float tw = s->w / scale;
+            float th = s->h / scale;
+
+            SDL_FRect dst = {
+                w->rect.x,
+                w->rect.y + (w->rect.h - th) / 2.0f,
+                tw,
+                th
+            };
+
+            SDL_RenderTexture(r, t, NULL, &dst);
             SDL_DestroySurface(s);
             SDL_DestroyTexture(t);
             break;

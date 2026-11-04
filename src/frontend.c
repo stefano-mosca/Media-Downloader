@@ -4,9 +4,11 @@
 
 #define WIDTH 960
 #define HEIGHT 720
-#define RED 65
-#define GREEN 69
-#define BLUE 89
+#define HEXCOLOR(color)    \
+    (color >> 24) & 0xFF,  \
+    (color >> 16) & 0xFF,  \
+    (color >> 8)  & 0xFF,  \
+    (color >> 0)  & 0xFF   \
 
 int main(void)
 {
@@ -48,7 +50,7 @@ int main(void)
     TTF_Font *font_bold = TTF_OpenFont("assets/Fonts/InterVariable.ttf", 12);
     TTF_SetFontStyle(font_bold, TTF_STYLE_BOLD);
 
-    Widget ui[] = 
+    Widget ui[] =
     {
         {
             .type = wd_image, .rect = {24.0f, 12.0f, 36.17f, 44.0f}, .visible = true, 
@@ -57,12 +59,12 @@ int main(void)
 
         {
           .type = wd_text, .rect = {84.0f, 24.0f, 103.0f, 15.0f}, .visible = true,
-          .text = { .text = "Media Downloader", .font = font_bold, .color = {198, 208, 245, 255} }
+          .text = { .text = "Media Downloader", .font = font_bold, .color = { HEXCOLOR(0xC6D0F5FF) } }
         },
 
         {
           .type = wd_text, .rect = {72.0f, 240.0f, 29.0f, 15.0f}, .visible = true,
-          .text = { .text = "Link:", .font = font_bold, .color = {198, 208, 245, 255} }
+          .text = { .text = "Link:", .font = font_bold, .color = { HEXCOLOR(0xC6D0F5FF) } }
         },
     };
 
@@ -79,7 +81,7 @@ int main(void)
             }
         }
 
-        SDL_SetRenderDrawColor(renderer, RED, GREEN, BLUE, 255);
+        SDL_SetRenderDrawColor(renderer, HEXCOLOR(0x414559FF));
         SDL_RenderClear(renderer);
 
         size_t ui_cout = sizeof(ui) / sizeof(ui[0]);

@@ -1,3 +1,5 @@
+SHELL           := /bin/sh
+
 TARGET          = media_downloader
 BUILD_DIR       = .build
 SRC_DIR         ?= src
@@ -24,48 +26,46 @@ CFLAGS_DEBUG    = -O0 -g3 -ggdb3 \
                   -fsanitize=address,undefined \
                   -DDEBUG
 
-LDLIBS_BASE     =
 LDLIBS_RELEASE  = -flto
 LDLIBS_DEBUG    = -fsanitize=address,undefined
 
 ifeq ($(OS),Windows_NT)
+    # Windows (w64devkit)
+    EXE_EXT      := .exe
+    RUN_CMD      = ./$(TARGET)$(EXE_EXT)
 
-    PKG_CONFIG   := $(shell where pkg-config >NUL 2>&1 && echo yes || echo no)
-    MKDIR        = if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
-    CLEAN        = if exist $(TARGET).exe del /f $(TARGET).exe & if exist $(BUILD_DIR) rmdir /s /q $(BUILD_DIR)
+    # My path of w64devkit
+    W64DEVKIT    ?= C:/Program Files/C and C++ compilers/w64devkit
 
+    CFLAGS_BASE  += -I"$(W64DEVKIT)/include"
+    LDLIBS_BASE  = -L"$(W64DEVKIT)/lib" \
+                   -lSDL3_image \
+                   -lSDL3_ttf \
+                   -lSDL3
 else
-
-    CFLAGS_DEBUG += -fsanitize-address-use-after-scope
-
-    PKG_CONFIG   := $(shell command -v pkg-config >/dev/null 2>&1 && echo yes || echo no)
-    MKDIR        = mkdir -p $(BUILD_DIR)
-    CLEAN        = $(RM) $(TARGET) && $(RM) -r $(BUILD_DIR)
-
-endif
-
-ifeq ($(PKG_CONFIG),yes)
+    # Linux
+    EXE_EXT      :=
+    RUN_CMD      = ./$(TARGET)
 
     SDL_PACKAGES = sdl3 sdl3-image sdl3-ttf
-
-    SDL_CFLAGS = $(shell pkg-config --cflags $(SDL_PACKAGES) 2>/dev/null)
-    SDL_LIBS   = $(shell pkg-config --libs $(SDL_PACKAGES) 2>/dev/null)
+    SDL_CFLAGS   = $(shell pkg-config --cflags $(SDL_PACKAGES) 2>/dev/null)
+    SDL_LIBS     = $(shell pkg-config --libs   $(SDL_PACKAGES) 2>/dev/null)
 
     ifeq ($(strip $(SDL_LIBS)),)
-        $(error SDL3 dependencies not found. Install SDL3, SDL3_image and SDL3_ttf.)
+        $(error SDL3 not found.
     endif
 
-else
+    CFLAGS_BASE  += $(SDL_CFLAGS)
+    LDLIBS_BASE  = $(SDL_LIBS)
 
-    $(error pkg-config is not available. Please install pkg-config.)
-
+    CFLAGS_DEBUG += -fsanitize-address-use-after-scope
 endif
 
-CFLAGS_BASE += $(SDL_CFLAGS)
-LDLIBS_BASE += $(SDL_LIBS)
+MKDIR           = mkdir -p $(BUILD_DIR)
+CLEAN           = rm -f $(TARGET)$(EXE_EXT) && rm -rf $(BUILD_DIR)
 
-CFLAGS       ?= $(CFLAGS_BASE)
-LDLIBS       ?= $(LDLIBS_BASE)
+override CFLAGS := $(CFLAGS_BASE)
+override LDLIBS := $(LDLIBS_BASE)
 
 SRCS          = $(wildcard $(SRC_DIR)/*.c)
 OBJS          = $(addprefix $(BUILD_DIR)/,$(notdir $(SRCS:.c=.o)))
@@ -77,12 +77,12 @@ $(BUILD_DIR):
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
-$(TARGET): $(OBJS)
+$(TARGET)$(EXE_EXT): $(OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
 .PHONY: all clean run rebuild debug release
 
-all: $(TARGET)
+all: $(TARGET)$(EXE_EXT)
 
 debug: CFLAGS = $(CFLAGS_BASE) $(CFLAGS_STRICT) $(CFLAGS_DEBUG)
 debug: LDLIBS = $(LDLIBS_BASE) $(LDLIBS_DEBUG)
@@ -92,8 +92,8 @@ release: CFLAGS = $(CFLAGS_BASE) $(CFLAGS_STRICT) $(CFLAGS_RELEASE)
 release: LDLIBS = $(LDLIBS_BASE) $(LDLIBS_RELEASE)
 release: clean all
 
-run: $(TARGET)
-	./$(TARGET)
+run: $(TARGET)$(EXE_EXT)
+	$(RUN_CMD)
 
 clean:
 	$(CLEAN)
